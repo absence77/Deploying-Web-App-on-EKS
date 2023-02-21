@@ -1,0 +1,144 @@
+def COLOR_MAP = [
+    'SUCCESS': 'good', 
+    'FAILURE': 'danger',
+]
+pipeline{
+    agent any
+    tools{
+        maven "MAVEN3"
+        jdk "JDK"
+    }
+    environment{
+        SNAP_REPO = "devops-snapshot"
+        NEXUS_USER = "admin"
+        NEXUS_PASS = "Krakow123"
+        RELEASE_REPO = "devops-release"
+        CENTRAL_REPO = "devops-proxy"
+        NEXUSIP = "172.18.169.33"
+        NEXUSPORT = "8081"
+        NEXUS_GRP_REPO = "devops-group"
+        NEXUS_LOGIN = "nexuslogin"
+        SONARSCANNER = "sonarscanner"
+        SONARSERVER = "sonarserver"
+        registryCredentials = 'ecr:us-east-1:cicdjenkins'
+        imagename = "866308211434.dkr.ecr.us-east-1.amazonaws.com/zhajili_devops"
+        applicationRegistry = 'https://866308211434.dkr.ecr.us-east-1.amazonaws.com'
+        ecs_cluster_name = "staging"
+        service_name = "STAGING-SERVICE"
+
+    }
+
+    stages{
+        stage("BUILD"){
+            //step to skip Unit Tests and pass parameters from settings.xml and install dependencies locally.
+            steps {
+                sh 'mvn -s settings.xml -DskipTests install'
+            }
+            post{
+                success {
+                echo "Now archiving"
+                archiveArtifacts artifacts: '**/*.war'
+
+                }
+            }
+        }
+        stage("UNIT TEST"){
+            // Execute Unit Test
+            steps {
+                sh 'mvn -s settings.xml test'
+            }
+
+
+        }
+        stage("CODE ANALYSIS WITH CHECKSTYLE"){
+            // Execute Checkstyle analysis and generates a report on violations.
+            steps {
+                sh "mvn -s settings.xml checkstyle:checkstyle"
+            }    
+    
+        }
+        stage('CODE ANALYSIS with SONARQUBE') {
+          
+		  environment {
+             scannerHome = tool "${SONARSCANNER}"
+          }
+
+          steps {
+            withSonarQubeEnv("${SONARSCANNER}") {
+               sh '''${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=vprofile \
+                   -Dsonar.projectName=vprofile-repo \
+                   -Dsonar.projectVersion=1.0 \
+                   -Dsonar.sources=src/ \
+                   -Dsonar.java.binaries=target/test-classes/com/visualpathit/account/controllerTest/ \
+                   -Dsonar.junit.reportsPath=target/surefire-reports/ \
+                   -Dsonar.jacoco.reportsPath=target/jacoco.exec \
+                   -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml'''
+                }
+            }
+        }
+        stage("QUALITY GATE"){
+            steps{
+                timeout(time: 1, unit: 'HOURS') {
+                waitForQualityGate abortPipeline: true
+                }
+            }
+
+        }
+        stage("UPLOAD ARTIFACT TO NEXUS"){
+            steps{
+                nexusArtifactUploader(
+                  nexusVersion: 'nexus3',
+                  protocol: 'http',
+                  nexusUrl: "${NEXUSIP}:${NEXUSPORT}",
+                  groupId: 'Production',
+                  version: "${env.BUILD_ID}-${env.BUILD_TIMESTAMP}",
+                  repository: "${RELEASE_REPO}",
+                  credentialsId: "${NEXUS_LOGIN}",
+                  artifacts: [
+                    [artifactId: 'zhajili-DevOps',
+                     classifier: '',
+                     file: "target/javaapp-v2.war",
+                     type: 'war']
+                  ]
+                )
+            }
+        }
+        stage("Build Docker Image"){
+            steps{
+                script{
+                    dockerImage = docker.build(imagename + ":$BUILD_ID" + "_$BUILD_TIMESTAMP","./Docker-files/app/multistage/")
+                }
+            }
+        }
+        stage("Upload Docker to ECR"){
+            steps{
+                script{
+                    docker.withRegistry (applicationRegistry,registryCredentials){
+                        dockerImage.push("$BUILD_ID")
+                        // dockerImage.push("$BUILD_TIMESTAMP")
+                        dockerImage.push("latest")
+                    }
+                }
+            }
+        }
+        stage("Deploy to ECS Staging"){
+            steps{
+               withAWS(credentials: "cicdjenkins",region: "us-east-1" ){
+                // force to delete old container deploy new one via service
+                sh 'aws ecs update-service --cluster ${ecs_cluster_name} --service ${service_name} --force-new-deployment'
+               }
+            }
+
+        }
+
+
+    }
+    post {
+    always {
+        echo 'Slack Notifications.'
+        slackSend channel: '#jenkins',
+            color: COLOR_MAP[currentBuild.currentResult],
+            message: "*${currentBuild.currentResult}:* Job ${env.JOB_NAME} build ${env.BUILD_NUMBER} \n More info at: ${env.BUILD_URL}"
+            }
+    }
+}
