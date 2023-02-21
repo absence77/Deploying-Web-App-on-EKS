@@ -8,7 +8,6 @@ pipeline{
         // registryCredentials = 'ecr:us-east-1:cicdjenkins'     
         imagename = "998179695351.dkr.ecr.us-east-1.amazonaws.com/php-web-app"
         applicationRegistry = 'https://998179695351.dkr.ecr.us-east-1.amazonaws.com/php-web-app'
-        PATH = "/usr/bin/docker"
 
     }
 
