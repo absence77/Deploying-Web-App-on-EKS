@@ -1,0 +1,13 @@
+pipeline {
+    agent any
+    environment {
+        PATH = "/usr/local/bin:${PATH+DOCKER}"
+    }
+    stages {
+        stage("Test Docker") {
+            steps {
+                sh "which docker"
+            }
+        }
+    }
+}
