@@ -2,11 +2,13 @@ pipeline {
     agent any
     environment {
         PATH = "/usr/bin/docker"
+        
     }
     stages {
         stage("Test Docker") {
             steps {
                 sh "which docker"
+                sh "docker version"
             }
         }
     }
