@@ -3,11 +3,12 @@ def COLOR_MAP = [
     'FAILURE': 'danger',
 ]
 pipeline{
-    agent any
+    agent any 
     environment{
         // registryCredentials = 'ecr:us-east-1:cicdjenkins'     
         imagename = "998179695351.dkr.ecr.us-east-1.amazonaws.com/php-web-app"
         applicationRegistry = 'https://998179695351.dkr.ecr.us-east-1.amazonaws.com/php-web-app'
+        PATH = "/usr/local/bin:${PATH+DOCKER}"
     }
 
     stages{
