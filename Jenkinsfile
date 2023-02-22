@@ -20,17 +20,17 @@ pipeline{
                 }
             }
         }
-        // stage("Upload Docker to ECR"){
-        //     steps{
-        //         script{
-        //             docker.withRegistry (applicationRegistry,registryCredentials){
-        //                 dockerImage.push("$BUILD_ID")
-        //                 dockerImage.push("latest")
-        //             }
-        //         }
-        //     }
-        // }
-        //
+        stage("Upload Docker to ECR"){
+            steps{
+                script{
+                    docker.withRegistry (applicationRegistry,registryCredentials){
+                        dockerImage.push("$BUILD_ID")
+                        dockerImage.push("latest")
+                    }
+                }
+            }
+        }
+        
     }
     post {
     always {
