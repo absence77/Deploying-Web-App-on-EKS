@@ -32,16 +32,9 @@ pipeline{
             }
         }
 
-        stage("Deploy to EKS") {
-            environment {
-                KUBECONFIG = credentials('kubeconfig')
-                        }
-            steps {
-                sh 'kubectl apply -f deployment.yaml'
-                sh 'kubectl apply -f service.yaml'
-                sh 'kubectl apply -f ingress.yaml'
-            }
-}
+        stage("kubernetes deployment"){
+            sh 'kubectl apply -f deployment.yml'
+    }
         
     }
     post {
@@ -53,3 +46,5 @@ pipeline{
             }
     }
 }
+
+
