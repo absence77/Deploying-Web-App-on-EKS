@@ -5,9 +5,10 @@ def COLOR_MAP = [
 pipeline{
     agent any 
     environment{
-        registryCredentials = 'ecr:us-east-1:cicdjenkins'     
-        imagename = "998179695351.dkr.ecr.us-east-1.amazonaws.com/php-web-app"
-        applicationRegistry = 'https://998179695351.dkr.ecr.us-east-1.amazonaws.com/php-web-app'
+
+        registryCredentials = 'ecr:us-east-1:cicdjenkins'
+        imagename = "866308211434.dkr.ecr.us-east-1.amazonaws.com/php-web-app"
+        applicationRegistry = 'https://866308211434.dkr.ecr.us-east-1.amazonaws.com'
 
     }
 
