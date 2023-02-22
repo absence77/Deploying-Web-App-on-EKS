@@ -22,3 +22,16 @@ spec:
         env:
         - name: DATABASE_URL
           value: "mysql://user:password@database-hostname:3306/database-name"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: php-web-app
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 80
+  selector:
+    app: php-web-app
