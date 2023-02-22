@@ -5,7 +5,7 @@ metadata:
   labels:
     app: php-web-app
 spec:
-  replicas: 1
+  replicas: 10
   selector:
     matchLabels:
       app: php-web-app
